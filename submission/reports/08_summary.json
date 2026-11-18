@@ -1,0 +1,18 @@
+{
+  "verdict": {
+    "decision": "Hold",
+    "n_errors": 0,
+    "n_warn_images": 38,
+    "n_images": 203,
+    "warn_ratio": 0.1872,
+    "reasons": [
+      "Tỉ lệ ảnh còn cảnh báo là 38/203 = 18.72% (>= ngưỡng Hold 10.00%), cần người duyệt kiểm tra thêm."
+    ]
+  },
+  "reviewed": 80,
+  "budget": 80,
+  "seconds": 3.3,
+  "exported": "/home/vanhzxjr/K5-L23-DAY09--2A202603214--AutoQCPipeline/submission/export/clean_v1",
+  "config_sha1": "1b059f1a63ed4742ddd035f7605e5091b7260c63",
+  "review_sim_sha1": "7988ca22827f780a7043a2300490e679a1697154"
+}

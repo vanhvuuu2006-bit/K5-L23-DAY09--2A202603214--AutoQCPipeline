@@ -1,4 +1,4 @@
-<p align="center">
+# Day 09 Lab — Vũ Việt Anh: 2A202603214 - Vũ Việt Anh
   <img src="docs/assets/hero.png" alt="Day 09 Lab: pipeline kiểm nhãn tự động" width="100%">
 </p>
 

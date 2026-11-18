@@ -40,5 +40,123 @@ from ..model_cache import get_preds  # noqa: F401
 
 
 def run(ds, cfg, preds=None):
-    # TODO
-    raise NotImplementedError("check second_opinion chưa làm")
+    # raise NotImplementedError("check second_opinion chưa làm")
+    if preds is None:
+        preds = get_preds(ds, cfg, "checker")
+
+    c = cfg["second_opinion"]
+    conf_thr = c["conf"]
+    min_area_px = c["min_area_px"]
+    fp_conf = c["fp_conf"]
+    iou_missing = c["iou_missing"]
+    iou_match = c["iou_match"]
+    iou_loose = c["iou_loose"]
+    n_classes = len(ds.classes)
+
+    issues = []
+
+    for img_path in ds.image_files():
+        stem = img_path.stem
+        if stem not in preds or not ds.label_path(stem).exists():
+            continue
+
+        img_size = ds.image_size(stem)
+        if img_size is None:
+            continue
+        img_w, img_h = img_size
+
+        raw_preds = preds[stem]
+        valid_labels = ds.valid_boxes(stem)
+
+        # 1. Duyet tung du doan cua model theo thu tu trong preds[stem]
+        for pred in raw_preds:
+            p_cls, p_conf, p_cx, p_cy, p_w, p_h = pred
+            p_cls = int(p_cls)
+            area_px = (p_w * img_w) * (p_h * img_h)
+            if p_conf < conf_thr or area_px < min_area_px:
+                continue
+
+            p_box = (p_cx, p_cy, p_w, p_h)
+            cands = []
+            for l_cls, l_cx, l_cy, l_w, l_h in valid_labels:
+                iou = iou_xywh(p_box, (l_cx, l_cy, l_w, l_h))
+                if iou >= iou_missing:
+                    cands.append((int(l_cls), iou))
+
+            if not cands:
+                issues.append(
+                    Issue(
+                        "second_opinion",
+                        WARN,
+                        "POSSIBLE_MISSING",
+                        stem,
+                        f"Model phat hien lop {p_cls} (conf={p_conf:.2f}) nhung chua co box nhan",
+                        extra={"conf": float(p_conf)},
+                    )
+                )
+                continue
+
+            same_cls_ious = [iou for l_cls, iou in cands if l_cls == p_cls]
+            if same_cls_ious:
+                best_same_iou = max(same_cls_ious)
+                if best_same_iou < iou_loose:
+                    issues.append(
+                        Issue(
+                            "second_opinion",
+                            WARN,
+                            "POSSIBLE_LOOSE_BOX",
+                            stem,
+                            f"Box nhan lop {p_cls} co the bi long/lech (IoU={best_same_iou:.2f} < {iou_loose})",
+                            extra={"conf": float(p_conf), "iou": float(best_same_iou)},
+                        )
+                    )
+                continue
+
+            diff_cls_ious = [iou for l_cls, iou in cands if l_cls != p_cls]
+            if diff_cls_ious:
+                best_diff_iou = max(diff_cls_ious)
+                if best_diff_iou >= iou_match:
+                    issues.append(
+                        Issue(
+                            "second_opinion",
+                            WARN,
+                            "POSSIBLE_WRONG_CLASS",
+                            stem,
+                            f"Co the gan nham lop (model du doan lop {p_cls}, IoU={best_diff_iou:.2f})",
+                            extra={"conf": float(p_conf), "iou": float(best_diff_iou)},
+                        )
+                    )
+
+        # 2. Duyet tung dong nhan hop le goc de tim POSSIBLE_FALSE_POS
+        fp_preds = [
+            (pred[2], pred[3], pred[4], pred[5])
+            for pred in raw_preds
+            if pred[1] >= fp_conf
+        ]
+        for item in ds.read_label_lines(stem):
+            line_no, raw_line = item if isinstance(item, tuple) else (None, item)
+            if not raw_line.strip():
+                continue
+            try:
+                l_cls, l_cx, l_cy, l_w, l_h = parse_yolo_line(raw_line)
+            except ValueError:
+                continue
+            if l_cls < 0 or l_cls >= n_classes or l_w <= 0 or l_h <= 0:
+                continue
+
+            l_box = (l_cx, l_cy, l_w, l_h)
+            max_iou = max((iou_xywh(l_box, pb) for pb in fp_preds), default=0.0)
+            if max_iou < iou_missing:
+                issues.append(
+                    Issue(
+                        "second_opinion",
+                        WARN,
+                        "POSSIBLE_FALSE_POS",
+                        stem,
+                        f"Box nhan dong {line_no} khong khop voi vat the nao model phat hien (max IoU={max_iou:.2f})",
+                        line=line_no,
+                        extra={"iou": float(max_iou)},
+                    )
+                )
+
+    return issues
