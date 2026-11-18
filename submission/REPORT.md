@@ -41,8 +41,7 @@ b. Các điểm mù có bằng chứng:
 Máy chỉ bắt được những khung vẽ lệch quá nhiều. Nếu người gán nhãn vẽ khung hơi rộng ra ngoài khoảng trống xung quanh xe một chút, hoặc cắt lẹm nhẹ vào một góc xe (đặc biệt với các xe ở xa, kích thước nhỏ), máy vẫn coi là chấp nhận được và bỏ qua.
 2. Gán sai tên loại xe mà ngay cả AI kiểm tra cũng nhầm theo:
 Hệ thống dùng một mô hình AI lớn để "chấm chéo" lại nhãn có sẵn. Tuy nhiên, với những loại xe đặc thù trên đường phố châu Á (như xe ba gác, xe tuk-tuk hoặc xe bị che khuất một nửa), cả nhãn gốc lẫn AI kiểm tra đều dễ nhìn nhầm thành ô tô hoặc xe tải. Khi cả hai cùng nhầm giống nhau, hệ thống tưởng là đúng và không báo lỗi.
-3. Ảnh trùng lặp nhưng đã bị cắt cúp hoặc xoay lật:
-Ở ngưỡng kiểm tra an toàn hiện tại, máy chỉ phát hiện được các ảnh giống hệt nhau hoặc bị thu nhỏ kích thước (bắt được khoảng 2/3 số ảnh trùng trong tập mẫu). Nếu một bức ảnh bị cắt bớt góc, xoay nghiêng hoặc lật ngược sang trái/phải, máy sẽ nhận diện đó là hai bức ảnh hoàn toàn khác nhau và để lọt qua vòng kiểm tra.
+
 ## 5. Train: raw vs clean (tùy chọn, chấm riêng)
 Chưa train: ghi "chưa chạy" và lý do, rồi bỏ qua phần còn lại của mục này. Nếu đã train: dán bảng từ `submission/results/comparison.md` (model, epoch, seed, số ảnh train mỗi biến thể).
 | biến thể | #ảnh train | số seed | map50 (TB ± độ lệch) | map50_95 (TB ± độ lệch) | precision (TB ± độ lệch) | recall (TB ± độ lệch) |
